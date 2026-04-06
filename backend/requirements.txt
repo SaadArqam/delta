@@ -1,10 +1,12 @@
 fastapi
 uvicorn
+gunicorn
 requests
 sqlalchemy
 psycopg2-binary
 pandas
 scikit-learn
 python-dotenv
+pydantic-settings
 joblib
 apscheduler
