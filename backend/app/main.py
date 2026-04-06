@@ -1,10 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from fastapi import FastAPI, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.database import engine, Base
 from app.services.nasa_service import fetch_nasa_events
@@ -62,7 +63,7 @@ def health_check(db: Session = Depends(get_db)):
     """Check system health and database connectivity."""
     try:
         # Simple query to check DB
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         return {
             "status": "healthy",
             "db_connection": "ok",
@@ -175,14 +176,26 @@ def predict(
 @app.get("/analytics/categories", response_model=Dict[str, int], tags=["Analytics"])
 def category_stats(db: Session = Depends(get_db)):
     """Group events by category and show counts."""
-    return get_category_counts(db)
+    try:
+        return get_category_counts(db)
+    except Exception as e:
+        logger.error(f"Error fetching category stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch category statistics")
 
 @app.get("/analytics/trends", tags=["Analytics"])
 def trends(db: Session = Depends(get_db)):
     """Retrieve daily event counts for trend analysis."""
-    return get_events_over_time(db)
+    try:
+        return get_events_over_time(db)
+    except Exception as e:
+        logger.error(f"Error fetching trends: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch trend data")
 
 @app.get("/analytics/recent", response_model=List[EventResponse], tags=["Analytics"])
 def recent(limit: int = 10, db: Session = Depends(get_db)):
     """List the most recent events found in the system."""
-    return get_recent_events(db, limit=limit)
+    try:
+        return get_recent_events(db, limit=limit)
+    except Exception as e:
+        logger.error(f"Error fetching recent events: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch recent events")
