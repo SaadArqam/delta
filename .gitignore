@@ -44,3 +44,5 @@ app/ml/*.joblib
 
 # OS
 .DS_Store
+
+notes.txt

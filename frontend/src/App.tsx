@@ -1,6 +1,7 @@
 import MapView from "./components/MapView";
 import Charts from "./components/Charts";
 import PredictBox from "./components/PredictBox";
+import OnboardingBanner from "./components/OnboardingBanner";
 import "leaflet/dist/leaflet.css";
 
 function App() {
@@ -11,9 +12,12 @@ function App() {
       padding: "20px",
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif"
     }}>
+      <OnboardingBanner />
+      
       <header style={{
         textAlign: "center",
         marginBottom: "40px",
+        marginTop: "80px", // Add space for banner
         padding: "20px",
         backgroundColor: "#f8f9fa",
         borderRadius: "12px",

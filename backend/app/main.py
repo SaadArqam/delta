@@ -28,6 +28,7 @@ from app.schemas import (
     CategoryStats, 
     TrendStats
 )
+from fastapi.middleware.cors import CORSMiddleware
 
 # --- Logging Config ---
 logging.basicConfig(
@@ -56,6 +57,13 @@ app = FastAPI(
     description="Scalable disaster tracking and risk prediction API.",
     version="1.0.0",
     lifespan=lifespan
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow all (dev)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/health", tags=["General"])
