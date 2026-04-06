@@ -13,9 +13,10 @@ __pycache__/
 *.pyd
 *.so
 
-# Virtual Environment
+# Virtual Environments
 venv/
 env/
+.venv/
 
 # =========================
 # 📦 NODE / FRONTEND
@@ -23,6 +24,7 @@ env/
 node_modules/
 dist/
 build/
+.next/
 
 # =========================
 # 📊 DATA FILES
@@ -38,13 +40,27 @@ data/
 *.pkl
 *.joblib
 *.h5
-models/
+
+# (optional) if you want to keep model in repo, comment above and use:
+# !app/ml/model.pkl
 
 # =========================
-# 🧠 VECTOR DB
+# 🧠 VECTOR DB / AI (not used here but safe)
 # =========================
 chroma/
 faiss_index/
+
+# =========================
+# 🐳 DOCKER
+# =========================
+docker-compose.override.yml
+*.dockerignore
+
+# =========================
+# 🗄️ DATABASE
+# =========================
+*.db
+*.sqlite3
 
 # =========================
 # 📝 LOGS
@@ -62,3 +78,11 @@ faiss_index/
 # 🚀 DEPLOYMENT
 # =========================
 .vercel
+
+# =========================
+# 📦 CACHE / TEMP
+# =========================
+*.cache
+.tmp
+
+!app/ml/model.pkl
