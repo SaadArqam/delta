@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
-from app.database import engine, Base
+from app.database import engine, Base, wait_for_db
 from app.services.nasa_service import fetch_nasa_events
 from app.services.feature_engineering import generate_features
 from app.services.dataset_builder import build_dataset
@@ -29,6 +29,7 @@ from app.schemas import (
     TrendStats
 )
 from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
 
 # --- Logging Config ---
 logging.basicConfig(
@@ -42,15 +43,34 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup actions
     logger.info("Initializing application services...")
-    
-    # Ensure tables are created (simple alternative to migrations for this scope)
-    Base.metadata.create_all(bind=engine)
-    
-    start_scheduler()
+
+    # Ensure DB is reachable before attempting schema creation
+    db_ready = wait_for_db(retries=10, delay=3)
+    if not db_ready:
+        logger.critical("Database not reachable at startup. Some endpoints will fail until DB is available.")
+    else:
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception as e:
+            logger.error(f"Error creating tables: {e}")
+
+    # Start scheduler only if enabled via env (helps when using multiple instances)
+    try:
+        if settings.START_SCHEDULER.lower() in ("1", "true", "yes"):
+            start_scheduler()
+        else:
+            logger.info("Scheduler startup skipped (START_SCHEDULER disabled).")
+    except Exception as e:
+        logger.error(f"Failed starting scheduler: {e}")
+
     yield
+
     # Shutdown actions
     logger.info("Shutting down application services...")
-    stop_scheduler()
+    try:
+        stop_scheduler()
+    except Exception as e:
+        logger.error(f"Failed stopping scheduler cleanly: {e}")
 
 app = FastAPI(
     title="AI Disaster Intelligence Platform",
@@ -58,9 +78,16 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+# Configure CORS from environment (FRONTEND_ORIGINS can be comma-separated or '*')
+origins_setting = settings.FRONTEND_ORIGINS or "*"
+if origins_setting.strip() == "*":
+    allow_origins = ["*"]
+else:
+    allow_origins = [o.strip() for o in origins_setting.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all (dev)
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -207,3 +234,9 @@ def recent(limit: int = 10, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error fetching recent events: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch recent events")
+
+
+if __name__ == "__main__":
+    # Allows running locally with: python -m app.main
+    import uvicorn
+    uvicorn.run("app.main:app", host=settings.APP_HOST, port=settings.APP_PORT, log_level="info")
